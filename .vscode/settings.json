@@ -1,0 +1,19 @@
+{
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
+  "dart.runPubGetOnPubspecChanges": "never",
+
+  "editor.formatOnSave": true,
+  "editor.rulers": [80],
+
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true
+  },
+
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.melos_tool": true,
+    "**/pubspec_overrides.yaml": true
+  }
+}

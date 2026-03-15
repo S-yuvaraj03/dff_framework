@@ -1,0 +1,40 @@
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      # Pattern: kit_video_player-v1.2.3
+      - '*-v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.x'
+          channel: stable
+
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap
+        run: melos bootstrap
+
+      # Extract package name from tag (e.g. kit_video_player-v0.1.0 → kit_video_player)
+      - name: Get package name
+        id: pkg
+        run: echo "name=${GITHUB_REF_NAME%-v*}" >> $GITHUB_OUTPUT
+
+      - name: Dry run first
+        run: dart pub publish --dry-run
+        working-directory: packages/${{ steps.pkg.outputs.name }}
+
+      - name: Publish
+        run: dart pub publish --force
+        working-directory: packages/${{ steps.pkg.outputs.name }}
+        env:
+          PUB_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}

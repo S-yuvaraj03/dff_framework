@@ -1,0 +1,37 @@
+# pubspec.yaml — monorepo ROOT
+# This is NOT a package. It will never be published.
+# Its only job: hold dev tool dependencies for melos to use.
+
+name: dff_framework
+description: >
+  Monorepo root workspace.
+  Not a publishable package — see packages/ for individual packages.
+
+# Tell pub.dev not to publish this if someone runs dart pub publish here.
+publish_to: none
+
+# Keep SDK constraint wide — the root is just scaffolding
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+# ─── NO dependencies: block here ──────────────────────────────────────
+# Never put flutter_bloc, dio, etc. here.
+# Those belong in each package's own pubspec.yaml.
+# App dependencies here would bleed into every package via bootstrap.
+
+# ─── Dev tools only ───────────────────────────────────────────────────
+dev_dependencies:
+
+  # Melos itself — must be a dev dep in root so `melos bootstrap` works
+  melos: ^6.1.0
+
+  # Conventional commits linter (pairs with .commitlintrc)
+  # Run: dart pub global activate commit_lint
+  # optional — only add if you use conventional commits
+  # commit_lint: ^1.0.0
+
+  # Coverage merging
+  coverage: ^1.8.0            # dart pub global activate coverage
+  lints: ">=3.0.0 <5.0.0" 
+
+

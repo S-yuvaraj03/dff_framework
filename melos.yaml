@@ -1,0 +1,125 @@
+# melos.yaml
+# Sits at the root of your monorepo — never inside a package folder.
+# Run `melos bootstrap` after any change here.
+
+name: dff_framework # name of your workspace, shown in CLI output
+
+# ─── PACKAGE DISCOVERY ────────────────────────────────────────────────
+packages:
+  - packages/** # every subfolder under packages/ is a package
+  - apps/** # your example/showcase apps are workspace members too
+
+# ─── COMMAND DEFAULTS ─────────────────────────────────────────────────
+command:
+  bootstrap:
+    # When another package in this repo depends on a sibling package,
+    # melos injects a pubspec_overrides.yaml that points to the local path.
+    # This means: during dev you always test against local code, not pub.dev.
+    usePubspecOverrides: true
+
+    # Run `flutter pub get` in all packages after bootstrap completes.
+    runPubGetInParallel: true
+
+  version:
+    # Reads conventional commits (feat:, fix:, chore:) and bumps
+    # version numbers in pubspec.yaml + writes CHANGELOG.md entries.
+    branch: main # only version from this branch
+    releaseUrl: true # adds GitHub release URL to CHANGELOG
+    fetchTags: true # pulls latest git tags before versioning
+
+    # Scopes that trigger a version bump per package:
+    # feat: → minor bump (0.1.0 → 0.2.0)
+    # fix:  → patch bump (0.1.0 → 0.1.1)
+    # BREAKING CHANGE: → major bump (0.1.0 → 1.0.0)
+
+  publish:
+    hooks:
+      pre: melos run test --no-select # all tests must pass before publish
+    # --no-select means run across all packages, no prompt
+
+# ─── SCRIPTS ──────────────────────────────────────────────────────────
+# Run any script with: melos run <name>
+# The exec block runs the command inside every matching package in parallel.
+
+scripts:
+  # ── Test ──────────────────────────────────────────────────────────
+  test:
+    description: Run flutter test in all packages that have a test/ folder
+    run: flutter test --coverage
+    exec:
+      concurrency: 4 # 4 packages tested in parallel
+      failFast: false # run all, collect all failures at once
+    packageFilters:
+      flutter: true # only Flutter packages (not pure Dart)
+      dirExists: test # skip packages with no test/ folder
+
+  test:dart:
+    description: Run dart test for pure Dart packages
+    run: dart test
+    exec:
+      concurrency: 4
+    packageFilters:
+      flutter: false # only pure Dart packages
+
+  # ── Analyze ───────────────────────────────────────────────────────
+  analyze:
+    description: dart analyze across all packages
+    run: dart analyze --fatal-infos --fatal-warnings
+    exec:
+      concurrency: 6
+    # --fatal-infos  → treat INFO level as error (strict)
+    # --fatal-warnings → treat WARNING as error (strict)
+    # Remove these flags if you want a softer check during early dev
+
+  # ── Format ────────────────────────────────────────────────────────
+  format:
+    description: Format all Dart files
+    run: dart format . --line-length 80
+    exec:
+      concurrency: 6
+
+  format:check:
+    description: Check format without changing files (used in CI)
+    run: dart format . --line-length 80 --set-exit-if-changed
+    exec:
+      concurrency: 6
+    # --set-exit-if-changed → exits with code 1 if anything needs formatting
+    # CI pipeline sees non-zero exit → fails the check
+
+  # ── Code generation ───────────────────────────────────────────────
+  generate:
+    description: Run build_runner in all packages that need it
+    run: >
+      dart run build_runner build
+      --delete-conflicting-outputs
+    exec:
+      concurrency: 1 # serial — build_runner can conflict if parallel
+    packageFilters:
+      dependsOn: build_runner # only packages that have build_runner as dep
+
+  # ── Pub.dev dry-run ───────────────────────────────────────────────
+  publish:dry:
+    description: Check all packages are ready to publish (no actual publish)
+    run: dart pub publish --dry-run
+    exec:
+      concurrency: 1 # serial so output is readable
+    packageFilters:
+      published: true # only packages that are already on pub.dev
+      # OR: noPublish: false     # exclude packages with publish_to: none
+
+  # ── Clean ─────────────────────────────────────────────────────────
+  clean:
+    description: Delete build/ and .dart_tool/ in all packages
+    run: >
+      rm -rf build .dart_tool
+    exec:
+      concurrency: 6
+
+  # ── Coverage report ───────────────────────────────────────────────
+  coverage:
+    description: Merge lcov reports from all packages
+    run: >
+      melos run test &&
+      dart pub global run coverage:format_coverage
+      --lcov --in=coverage --out=coverage/lcov.info
+    # Requires: dart pub global activate coverage
