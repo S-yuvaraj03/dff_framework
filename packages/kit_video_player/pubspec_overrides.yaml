@@ -1,0 +1,4 @@
+# melos_managed_dependency_overrides: kit_core
+dependency_overrides:
+  kit_core:
+    path: ..\\kit_core
